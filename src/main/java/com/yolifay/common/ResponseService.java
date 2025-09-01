@@ -13,7 +13,7 @@ public class ResponseService {
     private Object data;
 
 
-    public static ResponseService of(Constant.RESPONSE r, Object data) {
+    public static ResponseService of(CommonConstants.RESPONSE r, Object data) {
         return ResponseService.builder()
                 .responseCode(r.getCode())
                 .responseDesc(r.getDescription())
