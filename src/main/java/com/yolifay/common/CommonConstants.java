@@ -3,26 +3,22 @@ package com.yolifay.common;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-@Getter
 @RequiredArgsConstructor
-public class Constant {
+public class CommonConstants {
 
     @Getter
     public enum RESPONSE {
         APPROVED("00", "Approved"),
-        CREATED("01", "Created"),
+        CREATED("201", "Created"),
 
-
-        BAD_REQUEST("40", "Permintaan tidak valid"),
-        UNAUTHORIZED("41", "Unauthorized"),
-        FORBIDDEN("43", "Forbidden"),
-        HTTP_NOT_FOUND("44", "There is No Resource Path"),
-
+        BAD_REQUEST("400", "Permintaan tidak valid"),
+        UNAUTHORIZED("401", "Unauthorized"),
+        FORBIDDEN("403", "Forbidden"),
+        HTTP_NOT_FOUND("404", "There is No Resource Path"),
 
         DATA_EXISTS("15", "Data sudah ada"),
         ACCOUNT_NOT_FOUND("14", "Data tidak ditemukan"),
         INVALID_CREDENTIALS("51", "Username/Password salah"),
-
 
         HTTP_INTERNAL_ERROR("X5", "Service Internal Error");
 
