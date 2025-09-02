@@ -1,11 +1,7 @@
 package com.yolifay.infrastructure.adapter.in.web;
 
-import com.yolifay.application.command.LoginUserCommand;
-import com.yolifay.application.command.RefreshTokenCommand;
-import com.yolifay.application.command.RegisterUserCommand;
-import com.yolifay.application.handler.LoginUserHandler;
-import com.yolifay.application.handler.RefreshTokenHandler;
-import com.yolifay.application.handler.RegisterUserHandler;
+import com.yolifay.application.command.*;
+import com.yolifay.application.handler.*;
 import com.yolifay.common.CommonConstants;
 import com.yolifay.common.ResponseService;
 import com.yolifay.common.ResponseUtil;
@@ -30,8 +26,8 @@ public class AuthController {
     private final RegisterUserHandler registerHandler;
     private final LoginUserHandler loginHandler;
     private final RefreshTokenHandler refreshHandler;
-//    private final LogoutHandler logoutHandler;
-//    private final GetCurrentUserHandler meHandler;
+    private final LogoutHandler logoutHandler;
+    private final GetCurrentUserHandler meHandler;
 
     @Value("${service.id}")
     private String serviceId;
@@ -77,20 +73,26 @@ public class AuthController {
                 HttpStatus.OK.value(), serviceId, CommonConstants.RESPONSE.APPROVED, result
         ));
     }
-//
-//    @PostMapping("/logout")
-//    public ResponseEntity<ResponseService> logout(@RequestHeader("Authorization") String authHeader){
-//        logoutHandler.handle(new LogoutCommand(authHeader));
-//        return ResponseEntity.ok(ResponseService.setResponse(
-//                200, SID, CommonConstants.RESPONSE.APPROVED, null
-//        ));
-//    }
-//
-//    @GetMapping("/me")
-//    public ResponseEntity<ResponseService> me(){
-//        GetCurrentUserQueryDto dto = meHandler.handle();
-//        return ResponseEntity.ok(ResponseService.setResponse(
-//                200, SID, CommonConstants.RESPONSE.APPROVED, dto
-//        ));
-//    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ResponseService> logout(@RequestHeader("Authorization") String authHeader){
+        log.info("Incoming logout token");
+        logoutHandler.handleLogout(new LogoutCommand(authHeader));
+
+        log.info("Outgoing logout token");
+        return ResponseEntity.ok(ResponseUtil.setResponse(
+                HttpStatus.OK.value(), serviceId, CommonConstants.RESPONSE.APPROVED, null
+        ));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ResponseService> me(){
+        log.info("Incoming me");
+        GetCurrentUserCommand dto = meHandler.handleGetCurrentUser();
+
+        log.info("Outgoing me");
+        return ResponseEntity.ok(ResponseUtil.setResponse(
+                HttpStatus.OK.value(), serviceId, CommonConstants.RESPONSE.APPROVED, dto
+        ));
+    }
 }
