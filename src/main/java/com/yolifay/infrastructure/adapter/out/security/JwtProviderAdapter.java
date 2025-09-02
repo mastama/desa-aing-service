@@ -90,18 +90,22 @@ public class JwtProviderAdapter implements JwtProviderPortOut {
     public Map<String, Object> validateAndGetClaims(String token) {
         var parser = Jwts.parserBuilder().setSigningKey(publicKey).build();
         var c = parser.parseClaimsJws(token).getBody();
-        return Map.of(
-                "sub", c.getSubject(),
-                "jti", c.getId(),
-                "iat", c.getIssuedAt().toInstant(),
-                "exp", c.getExpiration().toInstant(),
-                "roles", c.get("roles"),
-                "ver", c.get("ver")
-        );
+
+        Map<String, Object> m = new java.util.HashMap<>();
+        // wajib ada:
+        m.put("sub", java.util.Objects.requireNonNull(c.getSubject(), "sub missing"));
+        m.put("jti", java.util.Objects.requireNonNull(c.getId(), "jti missing"));
+
+        // optional:
+        if (c.getIssuedAt() != null)     m.put("iat", c.getIssuedAt().toInstant());
+        if (c.getExpiration() != null)   m.put("exp", c.getExpiration().toInstant());
+        var roles = c.get("roles");       if (roles != null) m.put("roles", roles);
+        var ver   = c.get("ver");         if (ver   != null) m.put("ver", ver);
+
+        return m;
     }
 
     // ==== helpers ====
-
     private static String resolvePem(String path, String pemFallback, ResourceLoader loader) throws Exception {
         if (path != null && !path.isBlank()) {
             Resource res = loader.getResource(path); // mendukung classpath:, file:, http:

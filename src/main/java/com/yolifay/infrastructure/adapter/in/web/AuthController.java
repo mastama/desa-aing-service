@@ -1,21 +1,25 @@
 package com.yolifay.infrastructure.adapter.in.web;
 
 import com.yolifay.application.command.LoginUserCommand;
+import com.yolifay.application.command.RefreshTokenCommand;
 import com.yolifay.application.command.RegisterUserCommand;
 import com.yolifay.application.handler.LoginUserHandler;
+import com.yolifay.application.handler.RefreshTokenHandler;
 import com.yolifay.application.handler.RegisterUserHandler;
 import com.yolifay.common.CommonConstants;
 import com.yolifay.common.ResponseService;
 import com.yolifay.common.ResponseUtil;
 import com.yolifay.infrastructure.adapter.in.web.dto.*;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,7 +29,7 @@ public class AuthController {
 
     private final RegisterUserHandler registerHandler;
     private final LoginUserHandler loginHandler;
-//    private final RefreshTokenHandler refreshHandler;
+    private final RefreshTokenHandler refreshHandler;
 //    private final LogoutHandler logoutHandler;
 //    private final GetCurrentUserHandler meHandler;
 
@@ -61,14 +65,18 @@ public class AuthController {
         ));
     }
 
-//    @PostMapping("/refresh")
-//    public ResponseEntity<ResponseService> refresh(@RequestBody @Valid RefreshRequest req){
-//        var out = refreshHandler.handle(new RefreshTokenCommand(req.refreshToken()));
-//        return ResponseEntity.ok(ResponseService.setResponse(
-//                200, SID, CommonConstants.RESPONSE.APPROVED,
-//                new TokenResponse(out.accessToken(), out.refreshToken())
-//        ));
-//    }
+    @PostMapping("/refresh")
+    public ResponseEntity<ResponseService> refresh(@RequestBody @Valid RefreshRequest req, HttpServletRequest http) {
+        log.info("Incoming refresh token");
+        var ip = http.getRemoteAddr();
+        var ua = Optional.ofNullable(http.getHeader("User-Agent")).orElse("");
+        var result = refreshHandler.handleRefreshToken(new RefreshTokenCommand(req.refreshToken(), ip, ua));
+
+        log.info("Outgoing refresh token");
+        return ResponseEntity.ok(ResponseUtil.setResponse(
+                HttpStatus.OK.value(), serviceId, CommonConstants.RESPONSE.APPROVED, result
+        ));
+    }
 //
 //    @PostMapping("/logout")
 //    public ResponseEntity<ResponseService> logout(@RequestHeader("Authorization") String authHeader){
