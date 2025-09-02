@@ -19,4 +19,12 @@ public final class ResponseUtil {
         res.setData(obj);
         return res;
     }
+
+    public static ResponseService setResponse(int httpStatus, String serviceId, String caseCode, String description, Object obj) {
+        ResponseService res = new ResponseService();
+        res.setResponseCode(httpStatus + serviceId + caseCode);
+        res.setResponseDesc(description);
+        res.setData(obj);
+        return res;
+    }
 }

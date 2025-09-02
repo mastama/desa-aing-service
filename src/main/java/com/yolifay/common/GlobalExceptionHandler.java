@@ -1,34 +1,68 @@
 package com.yolifay.common;
 
-import jakarta.validation.ConstraintViolationException;
+import com.yolifay.application.exception.DataExistException;
+import com.yolifay.application.exception.DataNotFoundException;
+import com.yolifay.application.exception.RefreshStoreFailedException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.Map;
+import javax.net.ssl.SSLProtocolException;
+import java.net.SocketTimeoutException;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ResponseService> handleValidation(MethodArgumentNotValidException ex) {
-        var fe = ex.getBindingResult().getFieldError(); String msg = fe!=null? fe.getField()+": "+fe.getDefaultMessage():"Validation error";
-        var body = ResponseUtil.setResponse(400, "GEN", CommonConstants.RESPONSE.BAD_REQUEST, Map.of("message", msg));
-        return ResponseEntity.status(400).body(body);
+
+    @Value("${service.id}")
+    private String serviceId;
+
+    @ExceptionHandler(value = { DataNotFoundException.class })
+    public ResponseEntity<ResponseService> dataNotFoundException(DataNotFoundException e) {
+        warnNoStack(e);
+        ResponseService response = ResponseUtil.setResponse(HttpStatus.NOT_FOUND.value(), serviceId,
+                CommonConstants.RESPONSE.ACCOUNT_NOT_FOUND.getCode(), e.getMessage(),
+                null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ResponseService> handleConstraint(ConstraintViolationException ex){
-        var body = ResponseUtil.setResponse(400, "GEN", CommonConstants.RESPONSE.BAD_REQUEST, Map.of("message", ex.getMessage()));
-        return ResponseEntity.status(400).body(body);
+
+    @ExceptionHandler(value = { RefreshStoreFailedException.class })
+    public ResponseEntity<ResponseService> refreshStoreFailedException(RefreshStoreFailedException e) {
+        warnNoStack(e);
+        ResponseService response = ResponseUtil.setResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), serviceId,
+                CommonConstants.RESPONSE.HTTP_INTERNAL_ERROR.getCode(), e.getMessage(),
+                null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ResponseService> handleIllegalArg(IllegalArgumentException ex){
-        var body = ResponseUtil.setResponse(400, "GEN", CommonConstants.RESPONSE.BAD_REQUEST, Map.of("message", ex.getMessage()));
-        return ResponseEntity.status(400).body(body);
+
+    @ExceptionHandler(value = { DataExistException.class })
+    public ResponseEntity<ResponseService> dataExitsException(DataExistException e) {
+        warnNoStack(e);
+        ResponseService response = ResponseUtil.setResponse(HttpStatus.CONFLICT.value(), serviceId,
+                CommonConstants.RESPONSE.DATA_EXISTS.getCode(), e.getMessage(),
+                null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ResponseService> handleRuntime(RuntimeException ex){
-        var body = ResponseUtil.setResponse(500, "GEN", CommonConstants.RESPONSE.HTTP_INTERNAL_ERROR, Map.of("message", ex.getMessage()));
-        return ResponseEntity.status(500).body(body);
+
+    @ExceptionHandler(value = { SSLProtocolException.class, SocketTimeoutException.class })
+    public ResponseEntity<ResponseService> timeoutErrorHandler(Exception e) {
+        warnWithStack(e);
+        ResponseService response = ResponseUtil.setResponse(HttpStatus.REQUEST_TIMEOUT.value(), serviceId,
+                CommonConstants.RESPONSE.TRANSACTION_TIMEOUT.getCode(),
+                e.getMessage(), null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    // ===== Helper methods (tanpa constant) =====
+
+    private static void warnNoStack(Throwable e) {
+        log.warn("{} : {}", e.getClass().getSimpleName(), e.getMessage());
+    }
+
+    private static void warnWithStack(Throwable e) {
+        log.warn("{} : {}", e.getClass().getSimpleName(), e.getMessage(), e);
     }
 }

@@ -1,6 +1,6 @@
-package com.yolifay.domain.port;
+package com.yolifay.domain.port.out;
 
-public interface PasswordHasherPort {
+public interface PasswordHasherPortOut {
     String hash(String raw);
     boolean matches(String raw, String hash);
 }

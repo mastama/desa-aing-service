@@ -12,8 +12,7 @@ public class ResponseService {
     private String responseDesc;
     private Object data;
 
-
-    public static ResponseService of(CommonConstants.RESPONSE r, Object data) {
+    public static ResponseService setResponse(CommonConstants.RESPONSE r, Object data) {
         return ResponseService.builder()
                 .responseCode(r.getCode())
                 .responseDesc(r.getDescription())

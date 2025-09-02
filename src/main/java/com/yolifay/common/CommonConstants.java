@@ -20,7 +20,7 @@ public class CommonConstants {
         DATA_EXISTS("15", "Data sudah ada"),
         ACCOUNT_NOT_FOUND("14", "Data tidak ditemukan"),
         INVALID_CREDENTIALS("51", "Username/Password salah"),
-
+        TRANSACTION_TIMEOUT("68", "Transaction Timeout"),
         HTTP_INTERNAL_ERROR("X5", "Service Internal Error");
 
         private final String code;

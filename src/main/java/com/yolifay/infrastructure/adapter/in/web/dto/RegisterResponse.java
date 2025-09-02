@@ -1,16 +1,18 @@
-package com.yolifay.domain.model.view;
+package com.yolifay.infrastructure.adapter.in.web.dto;
 
 import java.time.Instant;
 import java.util.Set;
 
-public record UserCredentialsView(
+public record RegisterResponse(
         Long id,
         String fullName,
         String username,
         String email,
-        String phone,
-        String passwordHash,
+        String phoneNumber,
+        String status,
         Instant createdAt,
+        Instant updatedAt,
+        long version,
         Set<String> roles
 ) {
 }
