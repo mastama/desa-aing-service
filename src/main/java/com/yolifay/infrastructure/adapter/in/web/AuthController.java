@@ -56,7 +56,8 @@ public class AuthController {
         ));
         return ResponseEntity.ok(ResponseUtil.setResponse(
                 HttpStatus.OK.value(), serviceId, CommonConstants.RESPONSE.APPROVED,
-                new TokenResponse(pair.accessToken(), pair.refreshToken())
+                new TokenResponse(pair.access_token(), pair.token_type(), pair.expires_in(),
+                        pair.scope(), pair.jti(), pair.refresh_token())
         ));
     }
 

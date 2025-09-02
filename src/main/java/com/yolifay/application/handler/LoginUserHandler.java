@@ -4,12 +4,14 @@ import com.yolifay.application.command.LoginUserCommand;
 import com.yolifay.application.exception.RefreshStoreFailedException;
 import com.yolifay.domain.model.Role;
 import com.yolifay.domain.port.out.*;
+import com.yolifay.infrastructure.adapter.in.web.dto.TokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 
 @Service
@@ -22,13 +24,8 @@ public class LoginUserHandler {
     private final TokenStorePortOut tokenStore;
     private final ClockPortOut clock;
 
-    public record TokenPair(String accessToken,
-                            Instant accessExpiresAt,
-                            String refreshToken,
-                            Instant refreshExpiresAt) {}
-
     @Transactional
-    public TokenPair handleLogin(LoginUserCommand cmd) {
+    public TokenResponse handleLogin(LoginUserCommand cmd) {
         final String usernameOrEmail = cmd.usernameOrEmail().toLowerCase();
         log.info("[LOGIN] attempt usernameOrEmail={}", usernameOrEmail);
 
@@ -49,6 +46,11 @@ public class LoginUserHandler {
         // 2) issie Access token (JWT) (Terbitkan token)
         var at = jwt.issueAccess(user.getId(), roles, user.getVersion());
         var rt = jwt.issueRefresh(user.getId(), user.getVersion());
+        tokenStore.storeRefreshToken(user.getId(), rt.jti(), rt.expiresAt(), cmd.ip(), cmd.userAgent());
+
+        long expiresIn = Math.max(0, Duration.between(clock.now(), at.expiresAt()).toSeconds());
+        // scope: kalau kamu mau dari roles -> scope, sederhanakan saja:
+        String scope = String.join(" ", roles).replace("ROLE_", ""); // atau hardcode "READ WRITE" sesuai kebutuhan
 
         // Simpan refresh token di Redis (wajib berhasil - jika gagal, batalkan login)
         try {
@@ -63,9 +65,14 @@ public class LoginUserHandler {
         log.info("[LOGIN] success userId={} roles={} atExp={} rtExp={}",
                 user.getId(), roles, at.expiresAt(), rt.expiresAt());
 
-        return new TokenPair(
-                at.token(), at.expiresAt(),
-                rt.token(), rt.expiresAt()
+        return new TokenResponse(
+                at.token(),
+                "bearer",
+                expiresIn,
+                scope,
+                at.jti(),
+                // kalau ingin kirim refresh token di response:
+                rt.token()
         );
     }
 }

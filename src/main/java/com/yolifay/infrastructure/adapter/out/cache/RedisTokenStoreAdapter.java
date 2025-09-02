@@ -26,12 +26,21 @@ public class RedisTokenStoreAdapter implements TokenStorePortOut {
     @Override
     public void storeRefreshToken(Long userId, String refreshJti, Instant expiresAt, String ip, String ua) {
         log.info("Storing refresh token for userId= {}", userId);
+
         var key = kRefresh(userId, refreshJti);
         var ttl = Duration.between(Instant.now(), expiresAt);
-        redis.opsForHash().put(key, "ip", ip == null ? "" : ip);
-        redis.opsForHash().put(key, "ua", ua == null ? "" : ua);
+        var ttlSafe = ttl.isNegative() ? Duration.ofSeconds(1) : ttl;
+
+        redis.opsForHash().put(key, "sub", String.valueOf(userId));
+        redis.opsForHash().put(key, "jti", refreshJti);
         redis.opsForHash().put(key, "exp", String.valueOf(expiresAt.getEpochSecond()));
-        redis.expire(key, ttl.isNegative() ? Duration.ofSeconds(1) : ttl);
+        redis.opsForHash().put(key, "ip",  ip == null ? "" : ip);
+        redis.opsForHash().put(key, "ua",  ua == null ? "" : ua);
+        redis.expire(key, ttlSafe);
+
+        // (opsional) index per user -> set jti
+        redis.opsForSet().add("auth:refresh:index:%d".formatted(userId), refreshJti);
+        redis.expire("auth:refresh:index:%d".formatted(userId), ttlSafe);
     }
 
     @Override public boolean refreshExists(Long userId, String refreshJti) {
@@ -57,7 +66,6 @@ public class RedisTokenStoreAdapter implements TokenStorePortOut {
             conn.keyCommands().del(keys.toArray(new byte[0][]));
         }
     }
-
 
     @Override public Optional<Instant> getRefreshExpiry(Long userId, String refreshJti) {
         log.info("Getting refresh token expiry for userId= {}", userId);
