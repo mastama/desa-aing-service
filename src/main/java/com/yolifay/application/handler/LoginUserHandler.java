@@ -1,18 +1,18 @@
 package com.yolifay.application.handler;
 
 import com.yolifay.application.command.LoginUserCommand;
+import com.yolifay.application.exception.DataNotFoundException;
 import com.yolifay.application.exception.RefreshStoreFailedException;
+import com.yolifay.application.exception.UserNotActiveException;
 import com.yolifay.domain.model.Role;
 import com.yolifay.domain.port.out.*;
 import com.yolifay.infrastructure.adapter.in.web.dto.TokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -25,21 +25,21 @@ public class LoginUserHandler {
     private final ClockPortOut clock;
 
     @Transactional
-    public TokenResponse handleLogin(LoginUserCommand cmd) {
+    public TokenResponse handleLogin(LoginUserCommand cmd) throws Exception {
         final String usernameOrEmail = cmd.usernameOrEmail().toLowerCase();
         log.info("[LOGIN] attempt usernameOrEmail={}", usernameOrEmail);
 
         var user = userRepo.findByUsernameOrEmail(usernameOrEmail)
-                .orElseThrow(() -> new BadCredentialsException("Invalid username or email or password"));
+                .orElseThrow(() -> new DataNotFoundException("Invalid username or email or password"));
 
         // Cek status user
         if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
             log.warn("[LOGIN] userId={} status={} blocked", user.getId(), user.getStatus());
-            throw new BadCredentialsException("User is not active");
+            throw new UserNotActiveException("User is not active");
         }
 
         if (!hasher.matches(cmd.password(), user.getPasswordHash().value())) {
-            throw new BadCredentialsException("Invalid username or email or password");
+            throw new DataNotFoundException("Invalid username or email or password");
         }
 
         var roles = user.getRoles().stream().map(Role::name).toList();

@@ -1,6 +1,7 @@
 package com.yolifay.application.handler;
 
 import com.yolifay.application.command.RefreshTokenCommand;
+import com.yolifay.application.exception.RefreshStoreFailedException;
 import com.yolifay.domain.port.out.ClockPortOut;
 import com.yolifay.domain.port.out.JwtProviderPortOut;
 import com.yolifay.domain.port.out.TokenStorePortOut;
@@ -41,7 +42,7 @@ public class RefreshTokenHandler {
         var user = userRepo.findById(userId).orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
         if (user.getVersion() != tokenVersion) {
             log.warn("[REFRESH] version mismatch userId={} tokenVer={} currentVer={}", userId, tokenVersion, user.getVersion());
-            throw new org.springframework.security.authentication.BadCredentialsException("Invalid refresh token");
+            throw new RefreshStoreFailedException("Invalid refresh token");
         }
 
         // 3. Rotation and reuse detection
@@ -69,7 +70,7 @@ public class RefreshTokenHandler {
             } else {
                 log.warn("[REFRESH] unknown refresh jti userId={} jti={}", userId, oldJti);
             }
-            throw new BadCredentialsException("Invalid refresh token");
+            throw new RefreshStoreFailedException("Invalid refresh token");
         }
     }
 }

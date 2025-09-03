@@ -1,6 +1,7 @@
 package com.yolifay.application.handler;
 
 import com.yolifay.application.command.RegisterUserCommand;
+import com.yolifay.application.exception.DataExistException;
 import com.yolifay.domain.model.User;
 import com.yolifay.domain.port.out.ClockPortOut;
 import com.yolifay.domain.port.out.PasswordHasherPortOut;
@@ -24,11 +25,10 @@ public class RegisterUserHandler {
         final String username = cmd.username().toLowerCase();
         final String email    = cmd.email().toLowerCase();
 
-        if (userRepoOut.existsByUsername(username)) throw new IllegalArgumentException("Username already exists");
-        if (userRepoOut.existsByEmail(email))       throw new IllegalArgumentException("Email already exists");
+        if (userRepoOut.existsByUsername(username)) throw new DataExistException("Username is already in use");
+        if (userRepoOut.existsByEmail(email))       throw new DataExistException("Email is already in use");
 
-        // ⚠️ pastikan urutan argumen sesuai definisi User.newRegistered(...)
-        // Dari gejala output Anda, sepertinya urutan yang benar adalah (fullName, username, email, ...)
+        // pastikan urutan argumen sesuai definisi User.newRegistered(...)
         var user = User.newRegistered(
                 cmd.fullName(),
                 cmd.username(),

@@ -1,8 +1,6 @@
 package com.yolifay.common;
 
-import com.yolifay.application.exception.DataExistException;
-import com.yolifay.application.exception.DataNotFoundException;
-import com.yolifay.application.exception.RefreshStoreFailedException;
+import com.yolifay.application.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -43,6 +41,24 @@ public class GlobalExceptionHandler {
         warnNoStack(e);
         ResponseService response = ResponseUtil.setResponse(HttpStatus.CONFLICT.value(), serviceId,
                 CommonConstants.RESPONSE.DATA_EXISTS.getCode(), e.getMessage(),
+                null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @ExceptionHandler(value = { UserNotActiveException.class })
+    public ResponseEntity<ResponseService> userNotActiveException(UserNotActiveException e) {
+        warnNoStack(e);
+        ResponseService response = ResponseUtil.setResponse(HttpStatus.BAD_REQUEST.value(), serviceId,
+                CommonConstants.RESPONSE.BAD_REQUEST.getCode(), e.getMessage(),
+                null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @ExceptionHandler(value = { AccessUnauthorizedDeniedException.class })
+    public ResponseEntity<ResponseService> accessUnauthorizedDeniedException(AccessUnauthorizedDeniedException e) {
+        warnNoStack(e);
+        ResponseService response = ResponseUtil.setResponse(HttpStatus.UNAUTHORIZED.value(), serviceId,
+                CommonConstants.RESPONSE.UNAUTHORIZED.getCode(), e.getMessage(),
                 null);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

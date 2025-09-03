@@ -49,7 +49,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ResponseService> login(@RequestBody @Valid LoginRequest req,
                                                  @RequestHeader(value = "X-Forwarded-For", required = false) String ip,
-                                                 @RequestHeader(value = "User-Agent", required = false) String ua){
+                                                 @RequestHeader(value = "User-Agent", required = false) String ua) throws Exception {
         var pair = loginHandler.handleLogin(new LoginUserCommand(
                 req.usernameOrEmail(), req.password(),
                 ip != null ? ip : "", ua != null ? ua : ""
@@ -86,7 +86,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ResponseService> me(){
+    public ResponseEntity<ResponseService> me() throws Exception {
         log.info("Incoming me");
         GetCurrentUserCommand dto = meHandler.handleGetCurrentUser();
 
