@@ -50,10 +50,13 @@ public class AuthController {
     public ResponseEntity<ResponseService> login(@RequestBody @Valid LoginRequest req,
                                                  @RequestHeader(value = "X-Forwarded-For", required = false) String ip,
                                                  @RequestHeader(value = "User-Agent", required = false) String ua) throws Exception {
+        log.info("Incoming login: {}", req.usernameOrEmail());
         var pair = loginHandler.handleLogin(new LoginUserCommand(
                 req.usernameOrEmail(), req.password(),
                 ip != null ? ip : "", ua != null ? ua : ""
         ));
+
+        log.info("Outgoing login: {}", req.usernameOrEmail());
         return ResponseEntity.ok(ResponseUtil.setResponse(
                 HttpStatus.OK.value(), serviceId, CommonConstants.RESPONSE.APPROVED,
                 new TokenResponse(pair.access_token(), pair.token_type(), pair.expires_in(),

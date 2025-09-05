@@ -21,7 +21,8 @@ public class CommonConstants {
         ACCOUNT_NOT_FOUND("14", "Data tidak ditemukan"),
         INVALID_CREDENTIALS("51", "Username/Password salah"),
         TRANSACTION_TIMEOUT("68", "Transaction Timeout"),
-        HTTP_INTERNAL_ERROR("X5", "Service Internal Error");
+        HTTP_INTERNAL_ERROR("X5", "Service Internal Error"),
+        TOO_MANY_REQUESTS("99", "Too Many Requests");
 
         private final String code;
         private final String description;

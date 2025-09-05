@@ -72,6 +72,15 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @ExceptionHandler(value = { TooManyRequestsException.class })
+    public ResponseEntity<ResponseService> tooManyRequest(TooManyRequestsException e) {
+        warnWithStack(e);
+        ResponseService response = ResponseUtil.setResponse(HttpStatus.TOO_MANY_REQUESTS.value(), serviceId,
+                CommonConstants.RESPONSE.TOO_MANY_REQUESTS.getCode(),
+                e.getMessage(), null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     // ===== Helper methods (tanpa constant) =====
 
     private static void warnNoStack(Throwable e) {
