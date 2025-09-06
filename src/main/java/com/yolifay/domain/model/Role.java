@@ -2,6 +2,7 @@ package com.yolifay.domain.model;
 
 public enum Role {
     SUPER_ADMIN,
+    ADMIN,
     KEPALA_DESA,   // pimpinan desa
     SEKRETARIS_DESA,
     BENDAHARA,

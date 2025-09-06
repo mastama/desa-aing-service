@@ -2,19 +2,24 @@ package com.yolifay.infrastructure.adapter.out.security;
 
 import com.yolifay.domain.port.out.JwtProviderPortOut;
 import com.yolifay.domain.port.out.TokenStorePortOut;
-import jakarta.servlet.*;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 @Component
-public class JwtAuthenticationFilter extends GenericFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProviderPortOut jwt;
     private final TokenStorePortOut tokens;
@@ -25,29 +30,39 @@ public class JwtAuthenticationFilter extends GenericFilter {
     }
 
     @Override
-    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
-            throws IOException, ServletException {
-        var request = (HttpServletRequest) req;
-        var auth = request.getHeader("Authorization");
-        if (auth != null && auth.startsWith("Bearer ")) {
-            var token = auth.substring(7);
-            try {
-                Map<String,Object> claims = jwt.validateAndGetClaims(token);
-                var jti = (String) claims.get("jti");
-                if (!tokens.isAccessBlacklisted(jti)) {
-                    var userId = String.valueOf(claims.get("sub"));
-                    var roles = (List<String>) claims.getOrDefault("roles", List.of());
-                    var authorities = roles.stream().map(SimpleGrantedAuthority::new).toList();
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain chain) throws ServletException, IOException {
 
-                    var authentication = new AbstractAuthenticationToken(authorities) {
-                        @Override public Object getCredentials() { return token; }
-                        @Override public Object getPrincipal() { return userId; }
-                    };
-                    authentication.setAuthenticated(true);
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+        // Jangan overwrite auth yg sudah ada (misal Basic di actuator)
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (auth != null && auth.startsWith("Bearer ")) {
+                String token = auth.substring(7);
+                try {
+                    Map<String, Object> claims = jwt.validateAndGetClaims(token);
+                    String jti = (String) claims.get("jti");
+                    if (jti != null && !tokens.isAccessBlacklisted(jti)) {
+                        String userId = String.valueOf(claims.get("sub"));
+
+                        // Ambil roles & tambahkan prefix ROLE_
+                        List<?> raw = (List<?>) claims.getOrDefault("roles", List.of());
+                        List<SimpleGrantedAuthority> authorities = raw.stream()
+                                .map(Object::toString)
+                                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
+                                .map(SimpleGrantedAuthority::new)
+                                .toList();
+
+                        var authentication = new UsernamePasswordAuthenticationToken(userId, token, authorities);
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
+                } catch (Exception e) {
+                    // token invalid/expired/parse error: biarkan anonymous
+                    SecurityContextHolder.clearContext();
                 }
-            } catch (Exception ignored) { /* token invalid/expired -> anonymous */ }
+            }
         }
-        chain.doFilter(req, res);
+        chain.doFilter(request, response);
     }
 }

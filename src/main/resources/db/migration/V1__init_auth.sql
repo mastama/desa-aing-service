@@ -56,6 +56,7 @@ CREATE TRIGGER trg_users_updated_at
 -- ========== Seed: Roles ==========
 INSERT INTO roles(name, description) VALUES
                                          ('SUPER_ADMIN',    'Super administrator'),
+                                         ('ADMIN',          'Administrator'),
                                          ('KEPALA_DESA',    'Pimpinan desa'),
                                          ('SEKRETARIS_DESA','Sekretaris desa'),
                                          ('BENDAHARA',      'Bendahara'),
