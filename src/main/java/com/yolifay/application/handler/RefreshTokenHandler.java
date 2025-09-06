@@ -7,6 +7,8 @@ import com.yolifay.domain.port.out.JwtProviderPortOut;
 import com.yolifay.domain.port.out.TokenStorePortOut;
 import com.yolifay.domain.port.out.UserRepositoryPortOut;
 import com.yolifay.infrastructure.adapter.in.web.dto.TokenResponse;
+import com.yolifay.infrastructure.adapter.out.audit.AuditAction;
+import com.yolifay.infrastructure.adapter.out.audit.Audited;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -26,7 +28,8 @@ public class RefreshTokenHandler {
     private final UserRepositoryPortOut userRepo;
     private final ClockPortOut clock;
 
-    @Transactional(readOnly = true)
+    @Transactional
+    @Audited(action = AuditAction.REFRESH)
     public TokenResponse handleRefreshToken(RefreshTokenCommand cmd) {
         log.info("Refresh token: {}", cmd);
 

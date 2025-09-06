@@ -1,9 +1,10 @@
 package com.yolifay.domain.port.out;
 
-import com.yolifay.infrastructure.adapter.in.web.dto.AuditRecord;
+import com.yolifay.infrastructure.adapter.in.web.dto.AuditEvent;
+
+import java.util.List;
 
 public interface AuditLogPortOut {
-    void writeAudit(AuditRecord auditRec);
-    record AuditRecord(Long userId, String event, boolean success, String reason, String ip, String userAgent) {
-    }
+    void writeAudit(AuditEvent auditEvent);
+    List<AuditEvent> findAll(int page, int size);
 }

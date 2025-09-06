@@ -5,6 +5,8 @@ import com.yolifay.application.exception.AccessUnauthorizedDeniedException;
 import com.yolifay.application.exception.DataNotFoundException;
 import com.yolifay.domain.model.User;
 import com.yolifay.domain.port.out.UserRepositoryPortOut;
+import com.yolifay.infrastructure.adapter.out.audit.AuditAction;
+import com.yolifay.infrastructure.adapter.out.audit.Audited;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;

@@ -4,6 +4,8 @@ import com.yolifay.application.command.LogoutCommand;
 import com.yolifay.domain.port.out.ClockPortOut;
 import com.yolifay.domain.port.out.JwtProviderPortOut;
 import com.yolifay.domain.port.out.TokenStorePortOut;
+import com.yolifay.infrastructure.adapter.out.audit.AuditAction;
+import com.yolifay.infrastructure.adapter.out.audit.Audited;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -24,6 +26,7 @@ public class LogoutHandler {
     private final ClockPortOut clock;
 
     @Transactional
+    @Audited(action = AuditAction.LOGOUT)
     public void handleLogout(LogoutCommand cmd) {
         String token = extractBearer(cmd.authorizationHeader());
         if (token == null || token.isBlank()) {

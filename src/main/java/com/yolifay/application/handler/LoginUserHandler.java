@@ -7,7 +7,10 @@ import com.yolifay.application.exception.TooManyRequestsException;
 import com.yolifay.application.exception.UserNotActiveException;
 import com.yolifay.domain.model.Role;
 import com.yolifay.domain.port.out.*;
+import com.yolifay.infrastructure.adapter.in.web.dto.AuditEvent;
 import com.yolifay.infrastructure.adapter.in.web.dto.TokenResponse;
+import com.yolifay.infrastructure.adapter.out.audit.AuditAction;
+import com.yolifay.infrastructure.adapter.out.audit.Audited;
 import com.yolifay.infrastructure.config.RateLimitProps;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,7 @@ public class LoginUserHandler {
     }
 
     @Transactional
+    @Audited(action = AuditAction.LOGIN)
     public TokenResponse handleLogin(LoginUserCommand cmd) throws Exception {
         final String identifier = cmd.usernameOrEmail().toLowerCase();
         final String ip = cmd.ip() == null ? "" : cmd.ip();
@@ -50,8 +54,6 @@ public class LoginUserHandler {
                 Duration.ofSeconds(rateLimitProps.windowSeconds()));
         if (!allowed) {
             long ttl = Math.max(0, rateLimiter.ttlSeconds(key));
-            auditLogPort.writeAudit(new AuditLogPortOut.AuditRecord(null, "LOGIN_RATE_LIMIT", false,
-                    "ttl=" + ttl + "s", ip, userAgent));
             log.warn("[LOGIN] rate limit exceeded identifier={} ttl={}s", identifier, ttl);
             throw new TooManyRequestsException("Too many login attempts. Please Try again in %ds".formatted(ttl));
         }
@@ -65,16 +67,12 @@ public class LoginUserHandler {
 
             // 2. Check status
             if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-                auditLogPort.writeAudit(new AuditLogPortOut.AuditRecord(uid, "LOGIN_BLOCKED", false,
-                        "status=" + user.getStatus(), ip, userAgent));
                 log.warn("[LOGIN] blocked status identifier={} status={}", identifier, user.getStatus());
                 throw new UserNotActiveException("User is not active");
             }
 
             // 3. Verify password
             if (!hasher.matches(cmd.password(), user.getPasswordHash().value())) {
-                auditLogPort.writeAudit(new AuditLogPortOut.AuditRecord(uid, "LOGIN_FAILED", false,
-                        "bad credentials", ip, userAgent));
                 log.warn("[LOGIN] invalid credentials identifier={}", identifier);
                 throw new DataNotFoundException("Invalid username or email or password");
             }
@@ -87,15 +85,11 @@ public class LoginUserHandler {
             try {
                 tokenStore.storeRefreshToken(user.getId(), rt.jti(), rt.expiresAt(), ip, userAgent);
             } catch (RuntimeException ex) {
-                auditLogPort.writeAudit(new AuditLogPortOut.AuditRecord(uid, "LOGIN_FAIL", false,
-                        "refresh store failed: " + ex.getMessage(), ip, userAgent));
                 log.error("[LOGIN] failed store refresh identifier={} err={}", identifier, ex.toString());
                 throw new RefreshStoreFailedException("Failed to store refresh token");
             }
             // 6. Sukses -> reset rate limiter + audit log
             rateLimiter.reset(key);
-            auditLogPort.writeAudit(new AuditLogPortOut.AuditRecord(uid, "LOGIN_SUCCESS", true,
-                    "roles=" + String.join(",", roles), ip, userAgent));
 
             long expiresIn = Math.max(0, Duration.between(clock.now(), at.expiresAt()).toSeconds());
             String scope = String.join(" ", roles);
@@ -111,14 +105,32 @@ public class LoginUserHandler {
                     at.jti(),
                     rt.token()
             );
-        } catch (TooManyRequestsException ex) {
-            // sudah di audit di atas
-            throw ex;
         } catch (DataNotFoundException e) {
             // Kalau user belum ketemu (uid == null), tetap audit sebagai gagal kredensial
             if (uid == null) {
-                auditLogPort.writeAudit(new AuditLogPortOut.AuditRecord(null, "LOGIN_FAIL", false,
-                        "bad credentials", ip, userAgent));
+                auditLogPort.writeAudit(new AuditEvent(
+                        null,
+                        "AUTH_LOGIN",
+                        "/api/v1/auth/login",
+                        "POST",
+                        userAgent,
+                        ip,
+                        "Invalid username or email or password",
+                        401,
+                        clock.now()
+                ));
+            } else {
+                auditLogPort.writeAudit(new AuditEvent(
+                        uid,
+                        "AUTH_LOGIN",
+                        "/api/v1/auth/login",
+                        "POST",
+                        userAgent,
+                        ip,
+                        "Invalid username or email or password",
+                        401,
+                        clock.now()
+                ));
             }
             throw e;
         }

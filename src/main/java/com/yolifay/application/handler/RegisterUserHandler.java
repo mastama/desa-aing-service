@@ -7,6 +7,8 @@ import com.yolifay.domain.port.out.ClockPortOut;
 import com.yolifay.domain.port.out.PasswordHasherPortOut;
 import com.yolifay.domain.port.out.UserRepositoryPortOut;
 import com.yolifay.infrastructure.adapter.in.web.dto.RegisterResponse;
+import com.yolifay.infrastructure.adapter.out.audit.AuditAction;
+import com.yolifay.infrastructure.adapter.out.audit.Audited;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ public class RegisterUserHandler {
     private final ClockPortOut clock;
 
     @Transactional
+    @Audited(action = AuditAction.REGISTER)
     public RegisterResponse handleRegister(RegisterUserCommand cmd) {
         final String username = cmd.username().toLowerCase();
         final String email    = cmd.email().toLowerCase();

@@ -9,18 +9,30 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
-@Table(name="auth_audit")
+@Table(name="audit_event")
 public class AuthAuditEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
+
     Long userId;
+
+    @Column(nullable=false)
     String event;
-    boolean success;
-    @Column(columnDefinition = "text")
-    String reason;
-    String ip;
+
+    String resource;
+    String method;
+
     @Column(columnDefinition = "text")
     String userAgent;
-    @Column(columnDefinition = "timestamptz")
+
+    String ip;
+
+    @Column(columnDefinition = "text")
+    String reason;
+
+    int status;
+
+    @Column(columnDefinition = "timestamptz", nullable = false)
     Instant createdAt = Instant.now();
 }
