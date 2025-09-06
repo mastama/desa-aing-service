@@ -111,7 +111,7 @@ public class LoginUserHandler {
                 auditLogPort.writeAudit(new AuditEvent(
                         null,
                         "AUTH_LOGIN",
-                        "/api/v1/auth/login",
+                        "/api/auth/login",
                         "POST",
                         userAgent,
                         ip,
@@ -123,7 +123,7 @@ public class LoginUserHandler {
                 auditLogPort.writeAudit(new AuditEvent(
                         uid,
                         "AUTH_LOGIN",
-                        "/api/v1/auth/login",
+                        "/api/auth/login",
                         "POST",
                         userAgent,
                         ip,
